@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+# drizzle-kit이 만드는 마이그레이션 파일
+drizzle/
+# next dev가 관리하는 블록이 들어 있어서 포매터가 건드리지 않게 한다
+AGENTS.md
+CLAUDE.md

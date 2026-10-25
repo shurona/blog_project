@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* 글 본문. Tailwind 기본 스타일이 제목·목록 모양을 지우므로 본문 안에서만 되살린다. */
+.post-body {
+  @apply mt-6 text-[15px] leading-7 text-gray-800;
+}
+.post-body h2 {
+  @apply mt-8 mb-3 text-xl font-bold text-gray-900;
+}
+.post-body h3 {
+  @apply mt-6 mb-2 text-lg font-bold text-gray-900;
+}
+.post-body p {
+  @apply my-3;
+}
+.post-body ul {
+  @apply my-3 list-disc pl-6;
+}
+.post-body ol {
+  @apply my-3 list-decimal pl-6;
+}
+.post-body li > p {
+  @apply my-1;
+}
+.post-body blockquote {
+  @apply my-4 border-l-4 border-gray-300 pl-4 text-gray-600;
+}
+.post-body a {
+  @apply text-sky-700 underline;
+}
