@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { SHOP_TYPE_LABELS } from "../shop-types";
 import type { ShopProfile } from "../types";
 

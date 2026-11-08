@@ -1,5 +1,6 @@
 // 샘플 화면용 가짜 데이터. 상점·글 이름은 모두 지어낸 것이다. DB를 붙이면 이 폴더(src/sample)를 지운다.
 import type { JSONContent } from "@tiptap/core";
+
 import type { ShopProfile } from "@/features/shops/types";
 
 export type SampleShop = ShopProfile & { id: number };

@@ -1,4 +1,7 @@
+import type { Route } from "next";
+
 import { formatKoreanDate } from "@/lib/date";
+
 import type { PostListEntry } from "./components/post-list";
 import type { PostListItem } from "./types";
 
@@ -9,7 +12,7 @@ export function toPostListEntries(
 ): PostListEntry[] {
   return posts.map((post) => ({
     id: post.id,
-    href: `/${shopSlug}/posts/${post.id}`,
+    href: `/${shopSlug}/posts/${post.id}` as Route,
     title: post.title,
     categoryName: post.categoryName,
     dateLabel: formatKoreanDate(post.publishedAt),

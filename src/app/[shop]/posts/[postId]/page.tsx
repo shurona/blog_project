@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+
 import { PostArticle } from "@/features/posts/components/post-article";
 import { findPost, findShop } from "@/sample/queries";
 

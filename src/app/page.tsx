@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
 import { SHOP_TYPE_LABELS } from "@/features/shops/shop-types";
 import { listShops } from "@/sample/queries";
 

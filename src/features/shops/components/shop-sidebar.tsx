@@ -1,5 +1,7 @@
 import Link from "next/link";
+
 import { PostImage } from "@/features/posts/components/post-image";
+
 import type { CategoryWithCount, ShopProfile } from "../types";
 
 export function ShopSidebar({

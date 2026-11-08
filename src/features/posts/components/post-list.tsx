@@ -1,13 +1,15 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useState } from "react";
+
 import { PostImage } from "./post-image";
 
 // 목록 한 줄에 그릴 내용. 날짜는 서버에서 한국 날짜로 바꿔서 넘긴다.
 export type PostListEntry = {
   id: number;
-  href: string;
+  href: Route;
   title: string;
   categoryName: string;
   dateLabel: string;

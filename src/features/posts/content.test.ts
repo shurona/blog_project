@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import { describe, expect, it } from "vitest";
+
 import { extractPlainText, makeSummary, pickCoverImageKey } from "./content";
 
 const text = (value: string): JSONContent => ({ type: "text", text: value });

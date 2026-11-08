@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+
 import { ShopHeader } from "@/features/shops/components/shop-header";
 import { ShopSidebar } from "@/features/shops/components/shop-sidebar";
 import { findShop, listCategories } from "@/sample/queries";

@@ -2,6 +2,7 @@ import type { JSONContent } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import StarterKit from "@tiptap/starter-kit";
 import { renderToReactElement } from "@tiptap/static-renderer/pm/react";
+
 import { PostImage } from "./post-image";
 
 // 저장한 본문을 그대로 그리려면 에디터와 같은 확장 목록을 써야 한다. 에디터를 만들 때 이 목록을 같이 쓴다.

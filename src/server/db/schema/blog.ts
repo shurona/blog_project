@@ -1,8 +1,6 @@
 // drizzle-kit이 이 파일을 직접 읽기 때문에 '@/' 별칭 대신 상대 경로로 가져온다.
 import type { JSONContent } from "@tiptap/core";
 import {
-  type AnyPgColumn,
-  type PgTableExtraConfigValue,
   foreignKey,
   index,
   integer,
@@ -13,7 +11,10 @@ import {
   text,
   timestamp,
   unique,
+  type AnyPgColumn,
+  type PgTableExtraConfigValue,
 } from "drizzle-orm/pg-core";
+
 import { POST_STATUSES } from "../../../features/posts/post-status";
 import { SHOP_TYPES } from "../../../features/shops/shop-types";
 import { user } from "./auth";

@@ -1,5 +1,7 @@
 import Link from "next/link";
+
 import { formatKoreanDate } from "@/lib/date";
+
 import type { PostDetail } from "../types";
 import { PostBody } from "./post-body";
 

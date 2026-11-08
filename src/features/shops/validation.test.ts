@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { RESERVED_SHOP_SLUGS, shopSlugSchema } from "./validation";
 
 describe("shopSlugSchema", () => {
