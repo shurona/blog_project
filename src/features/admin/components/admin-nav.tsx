@@ -14,7 +14,7 @@ type MenuItem = {
 // 글·카테고리·휴지통은 상점마다 따로 관리해서, 상점 화면 안의 탭에 둔다.
 const MENU: MenuItem[] = [
   { label: "대시보드", href: "/admin" },
-  { label: "상점" },
+  { label: "상점", href: "/admin/shops" },
   { label: "관리자 계정", superAdminOnly: true },
 ];
 

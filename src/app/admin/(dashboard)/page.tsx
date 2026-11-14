@@ -17,7 +17,8 @@ export default function DashboardPage() {
         <Greeting />
       </Suspense>
       <p className="mt-3 text-sm text-gray-600">
-        상점, 카테고리, 글 관리는 하나씩 만들어 갈 거예요.
+        왼쪽 메뉴의 &quot;상점&quot;에서 상점을 만들고 정보를 고칠 수 있어요.
+        카테고리와 글 관리는 하나씩 만들어 갈 거예요.
       </p>
     </section>
   );
