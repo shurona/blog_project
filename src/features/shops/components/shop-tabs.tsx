@@ -10,7 +10,7 @@ export function ShopTabs({ slug }: { slug: string }) {
   const base = `/admin/shops/${slug}`;
   const tabs: { label: string; href?: Route }[] = [
     { label: "상점 정보", href: base as Route },
-    { label: "카테고리" },
+    { label: "카테고리", href: `${base}/categories` as Route },
     { label: "글" },
     { label: "휴지통" },
   ];
