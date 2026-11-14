@@ -2,6 +2,7 @@ import "server-only";
 
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware, isAPIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 
 import { db } from "@/server/db";
@@ -16,6 +17,19 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, { provider: "pg", schema }),
-  // nextCookies는 서버 액션에서 로그인할 때 쿠키를 심어 준다. 항상 마지막에 둔다.
+  hooks: {
+    // 비밀번호 변경이 성공했을 때만 "첫 로그인 비밀번호 변경 필요" 표시를 지운다.
+    // 이 표시는 화면에서 바꿀 수 없어서(input: false) 서버에서만 지운다.
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/change-password") return;
+      if (isAPIError(ctx.context.returned)) return;
+      const userId = ctx.context.session?.user.id;
+      if (!userId) return;
+      await ctx.context.internalAdapter.updateUser(userId, {
+        mustChangePassword: false,
+      });
+    }),
+  },
+  // nextCookies는 서버 쪽에서 Better Auth를 부를 때 쿠키를 심어 준다. 항상 마지막에 둔다.
   plugins: [...authOptions.plugins, nextCookies()],
 });

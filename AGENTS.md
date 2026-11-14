@@ -61,6 +61,7 @@ Vercel Hobby에서 가장 먼저 걸릴 수 있는 한도는 이미지 최적화
 - 모든 `dal.ts`는 맨 위에 `import "server-only"`를 둔다. 로그인 정보와 권한 조회는 React `cache()`로 감싸서 한 요청 안에서 한 번만 조회한다.
 - DAL은 DB 행을 그대로 돌려주지 않고, 화면에 필요한 칸만 담은 객체(DTO)를 돌려준다.
 - 라우트 핸들러(`route.ts`)는 외부에서 부를 주소가 꼭 필요할 때만 쓴다. 인증 콜백, 웹훅 등이 해당한다.
+- 예외: 로그인·로그아웃·비밀번호 변경 세 가지만 화면에서 Better Auth 화면용 함수(`authClient`)로 `/api/auth/...`에 보낸다. Better Auth의 로그인 시도 제한과 다른 사이트 요청 차단이 이 주소로 들어온 요청에만 걸리기 때문이다(서버 액션에서 Better Auth 함수를 직접 부르면 시도 제한을 거치지 않는다). 그 밖의 모든 데이터 쓰기는 서버 액션으로 한다.
 
 캐시 (Cache Components)
 
@@ -86,7 +87,17 @@ Vercel Hobby에서 가장 먼저 걸릴 수 있는 한도는 이미지 최적화
 - `app/error.tsx`: 예상하지 못한 오류가 나면 보여준다.
 - `app/[shop]/error.tsx`: 상점 페이지 오류. 상점 제목과 사이드바는 그대로 두고 본문 자리에만 보여준다.
 - `app/global-error.tsx`: 최상위 레이아웃 오류. 전역 CSS가 적용되지 않아 스타일을 직접 적는다.
-- 관리자 화면 레이아웃을 만들면 `admin/error.tsx`도 둔다.
+- `app/admin/error.tsx`: 관리자 페이지 오류.
+
+관리자 페이지 보호
+
+- 주소: `/admin/login`(로그인), `/admin/change-password`(비밀번호 변경), 그 밖의 관리 화면은 `app/admin/(dashboard)/` 아래에 두어 왼쪽 메뉴 레이아웃을 함께 쓴다.
+- 1차: `src/proxy.ts`가 로그인 쿠키가 없으면 페이지를 그리기 전에 `/admin/login`으로 보낸다. 쿠키가 있는지만 본다.
+- 2차: 관리 화면은 `requireAdmin()`(`features/auth/dal.ts`)으로 세션을 확인한다. 로그인하지 않았으면 로그인 화면으로, 임시 비밀번호를 아직 바꾸지 않았으면 비밀번호 변경 화면으로 보낸다.
+- 3차: 데이터를 읽고 쓰는 DAL 함수마다 `requireAdmin()`과 `features/auth/permissions.ts`의 권한 판단을 다시 거친다.
+- `user.must_change_password`는 화면에서 바꿀 수 없다. 비밀번호 변경이 성공하면 Better Auth after 훅(`server/auth/index.ts`)이 지운다.
+- 관리자 페이지에는 `noindex`가 붙는다(`app/admin/layout.tsx`).
+- 배포한 뒤 확인할 것: 로그인 시도 기록(`rate_limit.key`)이 접속자 IP별로 나뉘는지 본다. 로컬에서는 IP를 알 수 없어서 모두 같은 키로 기록된다.
 
 글 내용
 
@@ -179,7 +190,10 @@ src/
       dal.ts        DAL: DB 접근, 인증·인가, 입력 검증(server-only)
       actions.ts    서버 액션('use server'). DAL을 부르고 화면 갱신만 한다
       components/   그 기능의 화면 부품
+    auth/           관리자 로그인. dal.ts(getCurrentAdmin, requireAdmin), permissions.ts(권한 판단), auth-client.ts(화면용 인증 함수)
+    admin/          관리 화면 공통 부품(왼쪽 메뉴)
   lib/              여러 곳에서 쓰는 작은 함수(날짜 표시, 주소의 숫자 번호 검사)
+  proxy.ts          로그인 쿠키가 없으면 /admin을 그리기 전에 로그인 화면으로 보낸다
   sample/           샘플 화면용 가짜 데이터와 조회 함수. DB를 붙이면 지운다
   server/           서버 전용 공통 코드(server-only)
     auth/           Better Auth 설정. index.ts는 앱에서 쓰는 실제 설정, options.ts는 테이블 모양에 영향을 주는 공통 옵션, cli.ts는 테이블 정의 생성 전용

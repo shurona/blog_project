@@ -1,13 +1,20 @@
 import type { BetterAuthOptions } from "better-auth";
 import { username } from "better-auth/plugins";
 
+// Better Auth CLI가 이 파일을 직접 읽기 때문에 '@/' 별칭 대신 상대 경로로 가져온다.
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "../../features/auth/password-policy";
+
 // 테이블 모양에 영향을 주는 Better Auth 설정. 실제 로그인 설정과 테이블 정의 생성(cli.ts)이 함께 쓴다.
 export const authOptions = {
   emailAndPassword: {
     enabled: true,
     // 회원가입은 없다. 관리자 계정은 전체 관리자가 만든다.
     disableSignUp: true,
-    minPasswordLength: 10,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
   },
   // 관리자는 이메일이 아니라 아이디로 로그인한다. 이메일은 로그인에 쓰지 않는 별도 정보다.
   plugins: [username()],
