@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, asc, eq, isNull, sql, type SQL } from "drizzle-orm";
 
-import { getShopSettings } from "@/features/shops/dal";
+import { getShopSettings, requireManagedShop } from "@/features/shops/dal";
 import { toFieldErrors, type ActionResult } from "@/lib/action-result";
 import { db } from "@/server/db";
 import {
@@ -27,13 +27,6 @@ const NOT_FOUND: ActionResult = {
   ok: false,
   error: "카테고리를 찾을 수 없어요. 화면을 새로 고쳐 주세요.",
 };
-
-// 쓰기 함수의 입구. 관리할 수 없는 상점이면 던진다(화면에서는 생길 수 없는 요청이다).
-async function requireManagedShop(slugParam: string) {
-  const shop = await getShopSettings(slugParam);
-  if (!shop) throw new Error("상점을 찾을 수 없거나 권한이 없어요.");
-  return shop;
-}
 
 // 카테고리 조회·수정 조건은 모두 이 함수를 거쳐서, 상점 조건을 빠뜨릴 수 없게 한다.
 function inShop(shopId: number, ...conditions: SQL[]) {

@@ -42,6 +42,7 @@ describe("shopFieldsSchema", () => {
     instagramUrl: "",
     naverMapUrl: "",
     kakaoMapUrl: "",
+    profileImageId: "",
   };
 
   it("비워 둔 칸은 null로 바꾼다", () => {
@@ -86,6 +87,22 @@ describe("shopFieldsSchema", () => {
       false,
     );
   });
+
+  it("대표 사진을 비워 두면 null, 고르면 사진 번호다", () => {
+    expect(shopFieldsSchema.parse(empty).profileImageId).toBeNull();
+    expect(
+      shopFieldsSchema.parse({ ...empty, profileImageId: "12" }).profileImageId,
+    ).toBe(12);
+  });
+
+  it.each(["abc", "0", "-1", "1.5"])(
+    "잘못된 대표 사진 번호 거부: %s",
+    (profileImageId) => {
+      expect(
+        shopFieldsSchema.safeParse({ ...empty, profileImageId }).success,
+      ).toBe(false);
+    },
+  );
 
   it("전화번호는 숫자와 하이픈을 받는다", () => {
     expect(

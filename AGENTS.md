@@ -75,6 +75,12 @@ Next.js 이미지 최적화(서버가 사진 크기를 바꿔 주는 기능)는 
 - 서버가 발급한 업로드 주소(presigned URL)로 브라우저가 R2에 직접 올린다. 사진 파일이 서버와 Cloudflare Tunnel을 거치지 않게 하기 위해서다.
 - DB에는 전체 URL이 아니라 R2 key와 크기·종류 정보를 저장한다.
 - 올리기 전에 브라우저에서 크기를 줄여 WebP로 바꾼다. 본문용은 긴 변 1920px, 목록용은 640px로 만든다. 그래서 Next.js 이미지 최적화는 쓰지 않는다.
+- 사파리와 아이폰의 브라우저는 WebP로 저장하는 기능이 없어서, 그때는 같은 크기의 JPEG로 올린다. 그래서 R2에는 WebP와 JPEG 두 종류가 있다.
+- 관리자가 고를 수 있는 원본은 JPG, PNG, WebP이고 20MB까지다. 움직이는 GIF와 HEIC는 받지 않는다. 다른 파일을 고르면 "JPG, PNG, WebP 확장자만 업로드 가능합니다."라고 안내한다.
+- 올리는 순서: 서버가 권한을 확인하고 업로드 주소 두 개(본문용·목록용)를 발급한다 → 브라우저가 R2에 올린다 → 서버가 올라온 파일의 앞부분을 읽어 종류와 크기를 확인하고 `images`에 기록한다. 브라우저가 알려준 종류와 크기는 믿지 않는다. 확인에 실패한 파일은 R2에서 지운다.
+- 업로드 주소에는 파일 종류와 크기가 서명되어 있어서, 발급받을 때 말한 것과 다른 파일은 R2가 거부한다. 주소는 5분 동안만 쓸 수 있다.
+- R2 key는 `shops/상점번호/무작위번호.webp`(목록용은 `_640`이 붙는다) 모양이다. 서버가 상점 번호로 key를 만들기 때문에 다른 상점의 사진을 내 상점 사진으로 등록할 수 없다.
+- 사진 고르기 칸(`ImagePicker`)은 고르는 즉시 올리고, 폼을 저장해야 반영된다. 쓰이지 않게 된 사진은 R2에 남고, 정리 기능은 나중에 만든다.
 - 화면에는 Next.js `<Image>` 컴포넌트로 보여준다. `next.config.ts`에서 `images.unoptimized`를 켜 두어 서버를 거치지 않고 R2에서 바로 불러온다. 화면이 덜컹거리지 않게 가로·세로 크기를 꼭 넣는다.
 
 기능을 만들 때 지킬 것
@@ -191,7 +197,7 @@ src/
   app/              라우팅 전용(페이지, 레이아웃). 화면을 조립만 하고 로직은 features로 보낸다
     [shop]/         방문자 화면(상점별). 주소 맨 앞이 상점 주소라서 예약어를 막는다
     admin/          관리자 화면
-  features/         기능별 코드. 기능마다 폴더 하나(shops, categories, posts, ...)
+  features/         기능별 코드. 기능마다 폴더 하나(shops, categories, images, posts, ...)
     <기능>/
       validation.ts 입력 검증 규칙(zod). 화면과 서버가 같이 쓴다
       dal.ts        DAL: DB 접근, 인증·인가, 입력 검증(server-only)
@@ -206,6 +212,7 @@ src/
     auth/           Better Auth 설정. index.ts는 앱에서 쓰는 실제 설정, options.ts는 테이블 모양에 영향을 주는 공통 옵션, cli.ts는 테이블 정의 생성 전용
     db/             Drizzle 클라이언트(index.ts), 테이블 정의(schema/), DB 오류 코드 읽기(errors.ts)
     env.ts          환경 변수 검사. 비밀 값이 든 환경 변수는 여기를 통해서만 읽는다
+    r2/             R2 접속. 업로드 주소 발급, 올라온 파일 확인, 공개 주소 만들기
 drizzle/            drizzle-kit이 만드는 마이그레이션 SQL(git에 포함한다)
 scripts/            터미널에서 실행하는 스크립트(첫 전체 관리자 만들기 등). server-only 파일을 쓰려고 `tsx --conditions=react-server`로 실행한다
 ```
@@ -215,7 +222,7 @@ scripts/            터미널에서 실행하는 스크립트(첫 전체 관리�
 
 ## 로컬 개발 환경
 
-Node.js는 nvm 기본 버전(24)을 쓴다. 환경 변수는 `.env.local`(git 제외)에 두고, 필요한 항목은 `.env.example`을 참고한다. 지금 쓰는 값은 `DATABASE_URL`, `BETTER_AUTH_SECRET`(`openssl rand -base64 32`로 만든 무작위 값), `BETTER_AUTH_URL`이다. 운영 환경에는 로컬과 다른 비밀 키를 쓴다.
+Node.js는 nvm 기본 버전(24)을 쓴다. 환경 변수는 `.env.local`(git 제외)에 두고, 필요한 항목은 `.env.example`을 참고한다. 지금 쓰는 값은 `DATABASE_URL`, `BETTER_AUTH_SECRET`(`openssl rand -base64 32`로 만든 무작위 값), `BETTER_AUTH_URL`, 그리고 R2 값 다섯 개(`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`)다. R2 버킷에는 브라우저가 직접 올릴 수 있게 CORS 정책(사이트 주소에서 오는 `PUT`, `content-type` 헤더 허용)을 넣어 둔다. 운영 환경에는 로컬과 다른 비밀 키를 쓴다.
 
 ```bash
 pnpm dev                 # 개발 서버 (http://localhost:3000)
@@ -357,4 +364,6 @@ git
 - GitHub Actions가 서버에 접속하는 방식: Actions 실행기를 Tailscale 네트워크에 잠깐 참여시킨 뒤 SSH로 접속하는 방식을 추천했다. 사용자가 자동 배포를 만들 때 정하기로 했다. 다른 후보는 서버가 몇 분마다 새 이미지를 확인하는 방식이다
 - 운영 DB에 마이그레이션을 적용하는 절차: 언제, 어디서 `pnpm db:migrate`를 돌릴지
 - 사이트와 사진에 쓸 주소: 갖고 있는 도메인의 어떤 주소를 사이트에, 어떤 주소를 R2 사진에 붙일지
+- 로컬과 운영이 R2 버킷을 같이 쓸지: 지금은 버킷이 하나라서 로컬에서 올린 시험 사진도 같은 버킷에 들어간다. 배포할 때 버킷을 나눌지 정한다
+- 이미지를 빌드할 때 필요한 환경 변수: `server/env.ts`는 값이 없으면 바로 실패한다. GitHub Actions에서 빌드할 때 어떤 값을 어떻게 넣을지 Dockerfile을 만들 때 확인한다
 - 구조화 데이터(JSON-LD)를 넣을지: 검색 노출 작업을 할 때 정한다. 넣는다면 `dangerouslySetInnerHTML` 금지 규칙에 이 한 곳만 예외를 둔다

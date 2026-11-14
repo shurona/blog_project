@@ -2,10 +2,14 @@
 
 import { useActionState } from "react";
 
+import { ImagePicker } from "@/features/images/components/image-picker";
 import type { ActionResult } from "@/lib/action-result";
 
 import type { ShopSettings } from "../dal";
 import { SHOP_TYPE_LABELS, SHOP_TYPES } from "../shop-types";
+
+// 글자로 입력하는 칸. 대표 사진은 사진 고르기 칸(ImagePicker)이 따로 맡는다.
+type TextField = Exclude<keyof ShopSettings, "profileImage">;
 
 type ShopAction = (
   previous: ActionResult | null,
@@ -24,9 +28,9 @@ export function ShopForm({
   const failed = state && !state.ok ? state : null;
 
   // 제출에 실패하면 입력한 값을, 처음에는 저장된 값을 보여준다.
-  const value = (name: keyof ShopSettings) =>
+  const value = (name: TextField) =>
     failed?.values?.[name] ?? String(shop?.[name] ?? "");
-  const fieldProps = (name: keyof ShopSettings) => ({
+  const fieldProps = (name: TextField) => ({
     name,
     defaultValue: value(name),
     error: failed?.fieldErrors?.[name],
@@ -69,6 +73,16 @@ export function ShopForm({
       </Section>
 
       <Section title="소개">
+        {shop && (
+          <ImagePicker
+            shopSlug={shop.slug}
+            name="profileImageId"
+            label="대표 사진"
+            hint="블로그 사이드바에 보여요. 사진을 고른 뒤 아래 저장을 눌러야 반영돼요."
+            initialImage={shop.profileImage}
+            error={failed?.fieldErrors?.profileImageId}
+          />
+        )}
         <Field
           label="짧은 소개"
           hint="블로그 사이드바에 보여요. 200자까지예요."

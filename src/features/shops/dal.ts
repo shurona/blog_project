@@ -1,13 +1,15 @@
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { cache } from "react";
 
 import { getAdminPrincipal } from "@/features/auth/dal";
 import { canManageShop, canManageSite } from "@/features/auth/permissions";
+import { toUploadedImage, type UploadedImage } from "@/features/images/dto";
 import { toFieldErrors, type ActionResult } from "@/lib/action-result";
 import { db } from "@/server/db";
-import { shopMembers, shops } from "@/server/db/schema";
+import { PG_FOREIGN_KEY_VIOLATION, pgErrorCode } from "@/server/db/errors";
+import { images, shopMembers, shops } from "@/server/db/schema";
 
 import type { ShopType } from "./shop-types";
 import {
@@ -35,6 +37,7 @@ export type ShopSettings = ManagedShop & {
   instagramUrl: string | null;
   naverMapUrl: string | null;
   kakaoMapUrl: string | null;
+  profileImage: UploadedImage | null;
 };
 
 const summaryColumns = {
@@ -78,15 +81,41 @@ export const getShopSettings = cache(
     const slug = shopSlugSchema.safeParse(slugParam);
     if (!slug.success) return null;
     const admin = await getAdminPrincipal();
-    const [shop] = await db
-      .select(settingsColumns)
+    const [row] = await db
+      .select({
+        shop: settingsColumns,
+        profileImage: {
+          id: images.id,
+          key: images.key,
+          thumbKey: images.thumbKey,
+          width: images.width,
+          height: images.height,
+        },
+      })
       .from(shops)
+      .leftJoin(
+        images,
+        and(eq(images.id, shops.profileImageId), eq(images.shopId, shops.id)),
+      )
       .where(eq(shops.slug, slug.data))
       .limit(1);
-    if (!shop || !canManageShop(admin, shop.id)) return null;
-    return shop;
+    if (!row || !canManageShop(admin, row.shop.id)) return null;
+    return {
+      ...row.shop,
+      profileImage: row.profileImage && toUploadedImage(row.profileImage),
+    };
   },
 );
+
+// 상점에 딸린 것(카테고리, 사진, 글)을 쓰는 함수의 입구. 관리할 수 없는 상점이면 던진다.
+// 화면에서는 그런 상점의 버튼이 보이지 않으므로, 화면을 거치지 않은 요청일 때만 일어난다.
+export async function requireManagedShop(
+  slugParam: string,
+): Promise<ShopSettings> {
+  const shop = await getShopSettings(slugParam);
+  if (!shop) throw new Error("상점을 찾을 수 없거나 권한이 없어요.");
+  return shop;
+}
 
 // 상점 만들기. 전체 관리자만 할 수 있다.
 export async function createShop(
@@ -126,8 +155,7 @@ export async function updateShop(
   slugParam: string,
   values: Record<string, string>,
 ): Promise<ActionResult> {
-  const shop = await getShopSettings(slugParam);
-  if (!shop) throw new Error("상점을 찾을 수 없거나 권한이 없어요.");
+  const shop = await requireManagedShop(slugParam);
 
   const parsed = shopFieldsSchema.safeParse(values);
   if (!parsed.success) {
@@ -139,6 +167,19 @@ export async function updateShop(
     };
   }
 
-  await db.update(shops).set(parsed.data).where(eq(shops.id, shop.id));
+  try {
+    await db.update(shops).set(parsed.data).where(eq(shops.id, shop.id));
+  } catch (error) {
+    // 대표 사진은 이 상점이 올린 사진이어야 한다. 없는 사진이나 다른 상점의 사진은 DB 제약이 막는다.
+    if (pgErrorCode(error) !== PG_FOREIGN_KEY_VIOLATION) throw error;
+    return {
+      ok: false,
+      error: "입력한 내용을 확인해 주세요.",
+      fieldErrors: {
+        profileImageId: "사진을 찾을 수 없어요. 다시 올려 주세요.",
+      },
+      values,
+    };
+  }
   return { ok: true, message: "저장했어요." };
 }

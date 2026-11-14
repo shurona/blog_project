@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { idParamSchema } from "@/lib/id-param";
+
 import { SHOP_TYPES } from "./shop-types";
 
 // 상점 주소는 주소 맨 앞(/상점주소)에 오기 때문에, 앱이 쓰거나 나중에 쓸 수 있는 경로와 겹치는 단어는 막는다.
@@ -83,10 +85,15 @@ export const shopFieldsSchema = z.object({
   instagramUrl: optionalLink,
   naverMapUrl: optionalLink,
   kakaoMapUrl: optionalLink,
+  // 대표 사진으로 고른 사진 번호. 비어 있으면 대표 사진이 없다.
+  profileImageId: z
+    .union([z.literal(""), idParamSchema], "사진을 다시 골라 주세요.")
+    .transform((id) => (id === "" ? null : id)),
 });
 
-export const shopCreateSchema = shopFieldsSchema.extend({
-  slug: shopSlugSchema,
-});
+// 대표 사진은 상점 번호가 있어야 올릴 수 있어서, 상점을 만든 뒤에 넣는다.
+export const shopCreateSchema = shopFieldsSchema
+  .omit({ profileImageId: true })
+  .extend({ slug: shopSlugSchema });
 
 export type ShopFields = z.output<typeof shopFieldsSchema>;
