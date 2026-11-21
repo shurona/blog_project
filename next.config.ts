@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 실행에 필요한 파일만 .next/standalone에 모은다. Dockerfile이 이 폴더로 이미지를 만든다.
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   // 링크 주소를 타입 검사한다. 변수로 만든 주소는 `as Route`가 필요할 수 있다.

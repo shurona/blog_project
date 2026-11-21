@@ -1,0 +1,20 @@
+# 이미지를 만들 때 Docker에 보내지 않을 파일.
+
+# 비밀 값이 든 파일은 이미지에 절대 넣지 않는다. 진짜 값은 컨테이너를 띄울 때 넣는다.
+.env*
+
+# 이미지 안에서 새로 설치하고 새로 빌드한다.
+node_modules
+.next
+*.tsbuildinfo
+next-env.d.ts
+coverage
+
+# 빌드에 필요 없는 것
+.git
+.github
+.vscode
+*.md
+Dockerfile
+.dockerignore
+compose*.yml

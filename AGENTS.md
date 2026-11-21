@@ -274,7 +274,7 @@ psql -h 127.0.0.1 -p 55533 -U testuser -d golf_blog_local
 
 ## 배포와 인프라
 
-Vercel에 올리려던 계획을 바꿔 개인 서버에 배포한다. 배포 설정 파일(Dockerfile, compose 파일, GitHub Actions 워크플로)은 아직 만들지 않았다.
+Vercel에 올리려던 계획을 바꿔 개인 서버에 배포한다. 앱 이미지를 만드는 `Dockerfile`은 만들었다. compose 파일과 GitHub Actions 워크플로는 아직 만들지 않았다.
 
 | 영역 | 선택 | 메모 |
 |---|---|---|
@@ -297,6 +297,15 @@ Vercel에 올리려던 계획을 바꿔 개인 서버에 배포한다. 배포 �
 - 서버에는 공개 IP가 없다. Tailscale 주소로만 접속되므로, 같은 Tailscale 네트워크에 들어온 기기에서만 SSH가 된다. 사용자 컴퓨터에서는 `ssh shurona-chrome-server`로 접속한다.
 - 서버에 GitHub 실행기(self-hosted runner)를 설치하지 않는다. 공개 저장소에서는 남이 보낸 PR의 코드가 서버에서 실행될 수 있다.
 - 저장소가 공개라서 서버 주소, 터널 토큰, DB 접속 주소 같은 값은 문서와 코드에 적지 않는다. 서버의 환경 변수 파일과 GitHub Secrets에만 둔다.
+
+앱 이미지 (`Dockerfile`)
+
+- `next.config.ts`의 `output: "standalone"`으로 실행에 필요한 파일만 이미지에 담는다. 컨테이너는 3000번 포트에서 듣고, root가 아닌 `node` 계정으로 실행한다.
+- 빌드할 때는 Dockerfile에 적어 둔 가짜 환경 변수 값을 쓴다. `server/env.ts`가 값이 없으면 빌드를 멈추기 때문이다. 가짜 값은 이미지에 남지 않고, 진짜 값은 컨테이너를 띄울 때 넣는다. 그래서 이미지에는 비밀 값이 없다.
+- `server/env.ts`에 환경 변수를 추가하면 Dockerfile의 가짜 값에도 같은 이름을 추가한다. 빠뜨리면 이미지 빌드가 실패한다.
+- 빌드 중에 DB를 읽는 화면이 생기면 가짜 DB 주소로는 빌드가 실패할 수 있다. 주소에 변하는 값이 없는 화면(예: `/`)에서 `'use cache'`를 붙인 조회를 쓰면 빌드할 때 미리 실행되기 때문이다. 지금은 방문자 화면이 샘플 데이터를 써서 문제가 없다. 그런 화면이 생기면 빌드에서 DB를 어떻게 쓸지 정한다.
+- `public` 폴더를 만들면 Dockerfile에 그 폴더를 복사하는 줄을 추가한다.
+- 로컬에서 확인: `docker build -t blog-project:local-test .`로 만들고, `docker run --env-file`로 환경 변수를 넣어 띄운다. 컨테이너 안에서 로컬 DB에 접속할 때는 주소의 `localhost`를 `host.docker.internal`로 바꾼다.
 
 Neon
 
@@ -364,6 +373,6 @@ git
 - GitHub Actions가 서버에 접속하는 방식: Actions 실행기를 Tailscale 네트워크에 잠깐 참여시킨 뒤 SSH로 접속하는 방식을 추천했다. 사용자가 자동 배포를 만들 때 정하기로 했다. 다른 후보는 서버가 몇 분마다 새 이미지를 확인하는 방식이다
 - 운영 DB에 마이그레이션을 적용하는 절차: 언제, 어디서 `pnpm db:migrate`를 돌릴지
 - 사이트와 사진에 쓸 주소: 갖고 있는 도메인의 어떤 주소를 사이트에, 어떤 주소를 R2 사진에 붙일지
+- 운영용 compose 파일을 둘 곳: 이 저장소와 `~/workspace/infra-config` 중 어디에 둘지
 - 로컬과 운영이 R2 버킷을 같이 쓸지: 지금은 버킷이 하나라서 로컬에서 올린 시험 사진도 같은 버킷에 들어간다. 배포할 때 버킷을 나눌지 정한다
-- 이미지를 빌드할 때 필요한 환경 변수: `server/env.ts`는 값이 없으면 바로 실패한다. GitHub Actions에서 빌드할 때 어떤 값을 어떻게 넣을지 Dockerfile을 만들 때 확인한다
 - 구조화 데이터(JSON-LD)를 넣을지: 검색 노출 작업을 할 때 정한다. 넣는다면 `dangerouslySetInnerHTML` 금지 규칙에 이 한 곳만 예외를 둔다
